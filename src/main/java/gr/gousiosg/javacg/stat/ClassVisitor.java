@@ -45,6 +45,7 @@ import java.util.List;
  */
 public class ClassVisitor extends EmptyVisitor {
 
+    private final ParseHelper parseHelper = new ParseHelper();
     private JavaClass clazz;
     private ConstantPoolGen constants;
     private String classReferenceFormat;
@@ -54,17 +55,24 @@ public class ClassVisitor extends EmptyVisitor {
     public ClassVisitor(JavaClass jc) {
         clazz = jc;
         constants = new ConstantPoolGen(clazz.getConstantPool());
-        classReferenceFormat = "C:" + clazz.getClassName() + " %s";
+        classReferenceFormat = "C:" + clazz.getClassName() + ":I:" + clazz.isInterface() + ":" + ParseHelper.getInterfacesAsString(clazz.getInterfaceNames()) + " %s";
+    }
+
+    public String getInterfacesAsString(String[] interfaceStrings) {
+        return parseHelper.getInterfacesAsString(interfaceStrings);
     }
 
     public void visitJavaClass(JavaClass jc) {
         jc.getConstantPool().accept(this);
         Method[] methods = jc.getMethods();
         for (int i = 0; i < methods.length; i++) {
-            Method method = methods[i];
-            DCManager.retrieveCalls(method, jc);
-            DCManager.linkCalls(method);
-            method.accept(this);
+            try {
+                Method method = methods[i];
+                DCManager.retrieveCalls(method, jc);
+                DCManager.linkCalls(method);
+                method.accept(this);
+            } catch (Exception ignore) {
+            }
 
         }
     }
@@ -75,8 +83,8 @@ public class ClassVisitor extends EmptyVisitor {
             if (constant == null)
                 continue;
             if (constant.getTag() == 7) {
-                String referencedClass = 
-                    constantPool.constantToString(constant);
+                String referencedClass =
+                        constantPool.constantToString(constant);
                 System.out.println(String.format(classReferenceFormat, referencedClass));
             }
         }

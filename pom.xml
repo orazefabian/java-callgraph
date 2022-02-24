@@ -10,7 +10,9 @@
   <name>javacg</name>
 
   <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	  <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	  <maven.compiler.source>11</maven.compiler.source>
+	  <maven.compiler.target>11</maven.compiler.target>
   </properties>
 
   <dependencies>
@@ -79,8 +81,8 @@
         <version>3.6.1</version>
         <configuration>
           <optimize>false</optimize>
-          <source>1.8</source>
-          <target>1.8</target>
+          <source>11</source>
+          <target>11</target>
         </configuration>
       </plugin>
     </plugins>
