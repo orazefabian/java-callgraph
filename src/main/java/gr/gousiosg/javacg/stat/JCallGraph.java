@@ -30,6 +30,7 @@ package gr.gousiosg.javacg.stat;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -48,15 +49,20 @@ public class JCallGraph {
 
     public static void main(String[] args) {
 
+        System.out.println(runStaticAnalysis(args));
+    }
+
+    public static String runStaticAnalysis(String[] args) {
+        StringBuilder output = new StringBuilder();
+        StringWriter writer = new StringWriter();
         Function<ClassParser, ClassVisitor> getClassVisitor =
                 (ClassParser cp) -> {
                     try {
-                        return new ClassVisitor(cp.parse());
+                        return new ClassVisitor(cp.parse(),writer);
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
                 };
-
         try {
             for (String arg : args) {
 
@@ -69,7 +75,7 @@ public class JCallGraph {
                 try (JarFile jar = new JarFile(f)) {
                     Stream<JarEntry> entries = enumerationAsStream(jar.entries());
 
-                    String methodCalls = entries.
+                    output.append(entries.
                             flatMap(e -> {
                                 if (e.isDirectory() || !e.getName().endsWith(".class"))
                                     return (new ArrayList<String>()).stream();
@@ -80,17 +86,15 @@ public class JCallGraph {
                             map(s -> s + "\n").
                             reduce(new StringBuilder(),
                                     StringBuilder::append,
-                                    StringBuilder::append).toString();
-
-                    BufferedWriter log = new BufferedWriter(new OutputStreamWriter(System.out));
-                    log.write(methodCalls);
-                    log.close();
+                                    StringBuilder::append).toString());
                 }
             }
         } catch (IOException e) {
             System.err.println("Error while processing jar: " + e.getMessage());
             e.printStackTrace();
         }
+        output.append(writer.toString());
+        return output.toString();
     }
 
     public static <T> Stream<T> enumerationAsStream(Enumeration<T> e) {

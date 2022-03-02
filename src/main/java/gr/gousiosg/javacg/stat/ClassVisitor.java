@@ -36,6 +36,7 @@ import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.ConstantPoolGen;
 import org.apache.bcel.generic.MethodGen;
 
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,12 +52,15 @@ public class ClassVisitor extends EmptyVisitor {
     private String classReferenceFormat;
     private final DynamicCallManager DCManager = new DynamicCallManager();
     private List<String> methodCalls = new ArrayList<>();
+    private StringWriter writer;
 
-    public ClassVisitor(JavaClass jc) {
+    public ClassVisitor(JavaClass jc, StringWriter writer) {
+        this.writer = writer;
         clazz = jc;
         constants = new ConstantPoolGen(clazz.getConstantPool());
         classReferenceFormat = "C:" + clazz.getClassName() + ":I:" + clazz.isInterface() + ":" + ParseHelper.getInterfacesAsString(clazz.getInterfaceNames()) + " %s";
     }
+
 
     public String getInterfacesAsString(String[] interfaceStrings) {
         return parseHelper.getInterfacesAsString(interfaceStrings);
@@ -73,7 +77,6 @@ public class ClassVisitor extends EmptyVisitor {
                 method.accept(this);
             } catch (Exception ignore) {
             }
-
         }
     }
 
@@ -85,7 +88,8 @@ public class ClassVisitor extends EmptyVisitor {
             if (constant.getTag() == 7) {
                 String referencedClass =
                         constantPool.constantToString(constant);
-                System.out.println(String.format(classReferenceFormat, referencedClass));
+                writer.append(String.format(classReferenceFormat, referencedClass));
+                writer.append("\n");
             }
         }
     }
