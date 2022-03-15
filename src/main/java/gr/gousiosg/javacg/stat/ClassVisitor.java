@@ -52,9 +52,9 @@ public class ClassVisitor extends EmptyVisitor {
     private String classReferenceFormat;
     private final DynamicCallManager DCManager = new DynamicCallManager();
     private List<String> methodCalls = new ArrayList<>();
-    private StringWriter writer;
+    private List<GousiosCall> writer;
 
-    public ClassVisitor(JavaClass jc, StringWriter writer) {
+    public ClassVisitor(JavaClass jc, List<GousiosCall> writer) {
         this.writer = writer;
         clazz = jc;
         constants = new ConstantPoolGen(clazz.getConstantPool());
@@ -88,8 +88,7 @@ public class ClassVisitor extends EmptyVisitor {
             if (constant.getTag() == 7) {
                 String referencedClass =
                         constantPool.constantToString(constant);
-                writer.append(String.format(classReferenceFormat, referencedClass));
-                writer.append("\n");
+                writer.add(new GousiosCall(String.format(classReferenceFormat, referencedClass)));
             }
         }
     }

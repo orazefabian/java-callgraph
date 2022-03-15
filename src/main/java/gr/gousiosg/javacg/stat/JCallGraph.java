@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -49,16 +50,18 @@ public class JCallGraph {
 
     public static void main(String[] args) {
 
-        System.out.println(runStaticAnalysis(args));
+        List<GousiosCall> gousiosCalls = runStaticAnalysis(args);
+        System.out.println(gousiosCalls);
     }
 
-    public static String runStaticAnalysis(String[] args) {
+    public static List<GousiosCall> runStaticAnalysis(String[] args) {
         StringBuilder output = new StringBuilder();
+        List<GousiosCall> calls = new ArrayList<>();
         StringWriter writer = new StringWriter();
         Function<ClassParser, ClassVisitor> getClassVisitor =
                 (ClassParser cp) -> {
                     try {
-                        return new ClassVisitor(cp.parse(),writer);
+                        return new ClassVisitor(cp.parse(),calls);
                     } catch (IOException e) {
                         throw new UncheckedIOException(e);
                     }
@@ -75,7 +78,7 @@ public class JCallGraph {
                 try (JarFile jar = new JarFile(f)) {
                     Stream<JarEntry> entries = enumerationAsStream(jar.entries());
 
-                    output.append(entries.
+                    calls.addAll(entries.
                             flatMap(e -> {
                                 if (e.isDirectory() || !e.getName().endsWith(".class"))
                                     return (new ArrayList<String>()).stream();
@@ -83,18 +86,18 @@ public class JCallGraph {
                                 ClassParser cp = new ClassParser(arg, e.getName());
                                 return getClassVisitor.apply(cp).start().methodCalls().stream();
                             }).
-                            map(s -> s + "\n").
-                            reduce(new StringBuilder(),
-                                    StringBuilder::append,
-                                    StringBuilder::append).toString());
+                            map(s -> new GousiosCall(s)).collect(Collectors.toList()));
+
+                } catch (IOException e) {
+                    System.err.println("Error while processing jar: " + e.getMessage());
+                    e.printStackTrace();
                 }
+                return calls;
             }
-        } catch (IOException e) {
-            System.err.println("Error while processing jar: " + e.getMessage());
+        }catch (Exception e){
             e.printStackTrace();
         }
-        output.append(writer.toString());
-        return output.toString();
+        return calls;
     }
 
     public static <T> Stream<T> enumerationAsStream(Enumeration<T> e) {
